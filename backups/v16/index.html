@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#f5f0e7" />
+  <title>may.be</title>
+  <link rel="stylesheet" href="styles.css?v=16" />
+</head>
+<body>
+  <main class="phone" aria-live="polite">
+    <header class="app-header">
+      <button class="brand-mini" id="resetButton" aria-label="Start again">may<span>.</span>be</button>
+      <button class="undo" id="undoButton" aria-label="Go back one decision">↶ <span>Undo</span></button>
+    </header>
+
+    <section class="scene active intro" data-scene="intro">
+      <div class="hello"><h1>Hi, there.</h1><p>Tell me where you’re stuck.</p></div>
+      <button class="mic-button" id="micButton" aria-label="Start speaking">
+        <span class="mic-rings"></span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.2a3.6 3.6 0 0 0 3.6-3.6V6.4a3.6 3.6 0 1 0-7.2 0v5.2a3.6 3.6 0 0 0 3.6 3.6Zm-6-3.9a1 1 0 0 1 2 0 4 4 0 0 0 8 0 1 1 0 1 1 2 0 6 6 0 0 1-5 5.91V20h2.2a1 1 0 1 1 0 2H8.8a1 1 0 1 1 0-2H11v-2.79A6 6 0 0 1 6 11.3Z"/></svg>
+      </button>
+      <div class="tiny-input"><input id="decisionInput" aria-label="Type your situation" value="A better job in Bangalore means leaving my family. Should I go?"/><button id="sendButton" aria-label="Send">↑</button></div>
+    </section>
+
+    <section class="scene listening" data-scene="listening"><div class="sound-orb"><i></i><i></i><i></i><span></span></div><p>I’m listening</p></section>
+
+    <section class="scene meanings" data-scene="meanings"><div class="meaning-space" id="meaningSpace"><div class="bowl"><i></i></div></div></section>
+
+    <section class="scene passage" data-scene="passage"><div class="passage-copy"><p>You’ve told me the story.</p><h2>Now, let me find<br/>the paths.</h2></div></section>
+
+    <section class="scene journey" data-scene="journey">
+      <div class="logo-stage" id="logoStage"><span class="may">may</span><b>.</b><span class="be">be</span></div>
+      <svg class="tree-svg" id="treeSvg" viewBox="0 240 430 840" role="group" aria-label="Decision paths">
+        <defs>
+          <filter id="nodeShadow" x="-60%" y="-60%" width="220%" height="220%"><feDropShadow dx="0" dy="12" stdDeviation="15" flood-color="#3b271e" flood-opacity=".10"/></filter>
+          <filter id="softBlur"><feGaussianBlur stdDeviation="8"/></filter>
+        </defs>
+        <g id="treeGraph"></g>
+      </svg>
+      <div class="branch-caption" id="treeHint">Hover to understand · touch to follow</div>
+    </section>
+  </main>
+  <script src="app.js?v=16"></script>
+</body>
+</html>

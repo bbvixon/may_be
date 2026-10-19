@@ -1,0 +1,5 @@
+#root{min-height:100dvh}
+.logo-stage.seed b:after{content:attr(data-label);white-space:normal;width:104px}
+.journey-error{position:absolute;left:28px;right:28px;bottom:92px;margin:0;color:#8a4134;font-size:12px;text-align:center}
+.mic-button.recording{animation:recordingPulse 1.7s ease-in-out infinite}
+@keyframes recordingPulse{50%{transform:scale(1.045);box-shadow:0 24px 70px rgba(109,52,36,.34)}}
