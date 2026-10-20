@@ -228,14 +228,16 @@ export function createJourneyEngine({ elements, onError }: Options) {
 
   function addText(group: SVGElement, label: string, isCurrent = false) {
     const lines = splitLabel(label);
+    const lineHeight = 20;
+    const firstLineY = 1 - ((lines.length - 1) * lineHeight) / 2;
     const text = svg("text", {
       class: `svg-label${label.length > 16 ? " compact-label" : ""}`,
       "text-anchor": "middle",
       "dominant-baseline": "middle",
-      y: lines.length === 1 ? "1" : "-9",
+      y: firstLineY,
     });
     lines.forEach((line, index) => {
-      const span = svg("tspan", { x: "0", dy: index === 0 ? "0" : "20" });
+      const span = svg("tspan", { x: "0", dy: index === 0 ? "0" : lineHeight });
       span.textContent = line;
       text.appendChild(span);
     });
