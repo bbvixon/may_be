@@ -2,10 +2,10 @@ export type JourneySound = "tap" | "listen" | "bloom" | "branch" | "choose" | "u
 
 const STORAGE_KEY = "maybe-sound-enabled";
 const CHORDS = [
-  [146.83, 220, 293.66, 369.99],
-  [123.47, 185, 246.94, 329.63],
-  [164.81, 220, 277.18, 369.99],
-  [110, 164.81, 246.94, 293.66],
+  [293.66, 369.99, 440, 659.25],
+  [196, 246.94, 293.66, 440],
+  [220, 277.18, 329.63, 493.88],
+  [293.66, 369.99, 440, 587.33],
 ];
 
 class Soundscape {
@@ -62,15 +62,15 @@ class Soundscape {
       if (!this.context || !this.effectsBus) return;
       const now = this.context.currentTime;
       const notes: Record<JourneySound, Array<[number, number, number]>> = {
-        tap: [[440, 0, 0.16]],
-        listen: [[293.66, 0, 0.35], [440, 0.08, 0.42]],
-        bloom: [[369.99, 0, 0.55]],
-        branch: [[293.66, 0, 0.65], [369.99, 0.12, 0.7], [440, 0.24, 0.8]],
-        choose: [[369.99, 0, 0.3], [554.37, 0.1, 0.65]],
-        undo: [[440, 0, 0.3], [293.66, 0.1, 0.55]],
+        tap: [[587.33, 0, 0.12]],
+        listen: [[440, 0, 0.25], [587.33, 0.1, 0.34]],
+        bloom: [[659.25, 0, 0.32]],
+        branch: [[587.33, 0, 0.34], [739.99, 0.12, 0.38], [880, 0.24, 0.46]],
+        choose: [[739.99, 0, 0.24], [1174.66, 0.1, 0.42]],
+        undo: [[880, 0, 0.2], [587.33, 0.1, 0.34]],
       };
       notes[kind].forEach(([frequency, delay, duration], index) => {
-        this.chime(frequency, now + delay, duration, index === 0 ? 0.052 : 0.038);
+        this.chime(frequency, now + delay, duration, index === 0 ? 0.036 : 0.026);
       });
     });
   }
@@ -81,8 +81,8 @@ class Soundscape {
     this.musicBus = this.context.createGain();
     this.effectsBus = this.context.createGain();
     this.master.gain.value = 0.72;
-    this.musicBus.gain.value = 0.055;
-    this.effectsBus.gain.value = 0.42;
+    this.musicBus.gain.value = 0.14;
+    this.effectsBus.gain.value = 0.34;
     this.musicBus.connect(this.master);
     this.effectsBus.connect(this.master);
     this.master.connect(this.context.destination);
@@ -97,20 +97,37 @@ class Soundscape {
       const oscillator = this.context!.createOscillator();
       const gain = this.context!.createGain();
       const filter = this.context!.createBiquadFilter();
-      oscillator.type = index % 2 === 0 ? "sine" : "triangle";
+      oscillator.type = "sine";
       oscillator.frequency.value = frequency;
-      oscillator.detune.value = index % 2 === 0 ? -3 : 3;
       filter.type = "lowpass";
-      filter.frequency.value = 720;
-      filter.Q.value = 0.45;
+      filter.frequency.value = 1_400;
+      filter.Q.value = 0.25;
       gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(index === 0 ? 0.22 : 0.13, now + 2.6);
-      gain.gain.setValueAtTime(index === 0 ? 0.22 : 0.13, now + 5.1);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 9.8);
+      gain.gain.exponentialRampToValueAtTime(index === 0 ? 0.04 : 0.026, now + 2.2);
+      gain.gain.setValueAtTime(index === 0 ? 0.04 : 0.026, now + 4.2);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 8.8);
       oscillator.connect(filter).connect(gain).connect(this.musicBus!);
       oscillator.start(now);
-      oscillator.stop(now + 10);
+      oscillator.stop(now + 9);
     });
+    const upperNotes = chord.map((frequency) => frequency * 2);
+    this.ambientNote(upperNotes[0], now + 0.9);
+    this.ambientNote(upperNotes[2], now + 3.4);
+    this.ambientNote(upperNotes[1], now + 6.1);
+  }
+
+  private ambientNote(frequency: number, start: number) {
+    if (!this.context || !this.musicBus) return;
+    const oscillator = this.context.createOscillator();
+    const gain = this.context.createGain();
+    oscillator.type = "sine";
+    oscillator.frequency.value = frequency;
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(0.055, start + 0.035);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + 1.7);
+    oscillator.connect(gain).connect(this.musicBus);
+    oscillator.start(start);
+    oscillator.stop(start + 1.75);
   }
 
   private chime(frequency: number, start: number, duration: number, volume: number) {
@@ -122,8 +139,8 @@ class Soundscape {
     oscillator.type = "sine";
     oscillator.frequency.value = frequency;
     overtone.type = "sine";
-    overtone.frequency.value = frequency * 2.01;
-    overtoneGain.gain.value = 0.14;
+    overtone.frequency.value = frequency * 2;
+    overtoneGain.gain.value = 0.08;
     gain.gain.setValueAtTime(0.0001, start);
     gain.gain.exponentialRampToValueAtTime(volume, start + 0.018);
     gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
