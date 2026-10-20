@@ -53,3 +53,21 @@ python -m http.server 4173
 - `backups/v16`: recoverable v16 snapshot and SHA-256 manifest
 
 may.be models plausible paths from explicit facts, evidence, assumptions, and human unknowns. It does not claim to predict outcomes.
+
+## Portfolio deployment
+
+The repository includes a root `render.yaml` for a single Render web service. The production Fastify process serves both the compiled React application and the `/v1` API from one origin.
+
+The hosted portfolio build uses the deterministic mock provider:
+
+```text
+MAYBE_AI_PROVIDER=mock
+```
+
+Deploy through the Render Blueprint page after pushing `main`:
+
+```text
+https://dashboard.render.com/blueprint/new?repo=https://github.com/bbvixon/may_be
+```
+
+Ollama and LM Studio remain local-development providers. Do not expose their native ports publicly; for a private live demonstration, tunnel the may.be web application instead.
