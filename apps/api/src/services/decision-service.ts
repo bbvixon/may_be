@@ -137,9 +137,12 @@ export function normalizeAnalysis(
   const declaredRoot = analysis.graph.nodes.find(
     (node) => node.id === analysis.graph.rootNodeId,
   );
-  const root = declaredRoot ?? {
+  const inferredRoot = analysis.graph.nodes.find(
+    (node) => !analysis.graph.edges.some((edge) => edge.to === node.id),
+  );
+  const root = declaredRoot ?? inferredRoot ?? {
     id: "root",
-    label: analysis.graph.title,
+    label: graphLabel(analysis.graph.title),
     summary: input,
     grounding: "user_fact" as const,
     factorIds: analysis.factors.map((factor) => factor.id),
@@ -147,7 +150,8 @@ export function normalizeAnalysis(
   };
   const branches = analysis.graph.nodes
     .filter((node) => node.id !== root.id)
-    .slice(0, 6);
+    .slice(0, 6)
+    .map((node) => ({ ...node, label: compactLabel(node.label) }));
   if (!branches.length) return buildLocalDemo(input);
   return {
     ...analysis,
@@ -155,7 +159,7 @@ export function normalizeAnalysis(
       ...analysis.graph,
       decisionId: `decision-${Date.now()}`,
       rootNodeId: root.id,
-      nodes: [root, ...branches],
+      nodes: [{ ...root, label: graphLabel(root.label) }, ...branches],
       edges: branches.map((branch) => ({
         id: `${root.id}-${branch.id}`,
         from: root.id,
@@ -195,6 +199,13 @@ function compactLabel(value: string) {
     : compact.slice(0, 3);
   const label = selected.join(" ");
   return label.length <= 22 ? label : `${label.slice(0, 21).trimEnd()}…`;
+}
+
+function graphLabel(value: string) {
+  const normalized = value.replace(/\s+/g, " ").trim();
+  return normalized.length <= 48
+    ? normalized
+    : `${normalized.slice(0, 47).trimEnd()}…`;
 }
 
 export function buildLocalDemo(input: string): AnalyzeDecisionResponse {
@@ -332,9 +343,18 @@ function buildAlternativeDemo(
 function parseAlternatives(input: string): [string, string] | null {
   const cleaned = input
     .trim()
-    .replace(/[?.!]+$/, "")
-    .replace(/^(?:should\s+i\s+)?(?:choose|pick|buy|use|get)\s+/i, "");
-  const match = cleaned.match(/^(.{1,48}?)\s+(?:or|vs\.?|versus)\s+(.{1,48})$/i);
+    .replace(/[?.!]+$/, "");
+  const contextualMatch = cleaned.match(
+    /\b(?:for|between)\s+(.{1,48}?)\s+(?:or|vs\.?|versus)\s+(.{1,48}?)(?:\s+first)?$/i,
+  );
+  if (contextualMatch) {
+    return [displayChoice(contextualMatch[1]), displayChoice(contextualMatch[2])];
+  }
+  const directChoice = cleaned.replace(
+    /^(?:should\s+i\s+)?(?:choose|pick|buy|use|get)\s+/i,
+    "",
+  );
+  const match = directChoice.match(/^(.{1,48}?)\s+(?:or|vs\.?|versus)\s+(.{1,48})$/i);
   if (!match) return null;
   return [displayChoice(match[1]), displayChoice(match[2])];
 }

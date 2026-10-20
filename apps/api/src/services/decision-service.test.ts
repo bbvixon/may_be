@@ -12,6 +12,19 @@ test("preserves explicit alternatives as keywords and first branches", () => {
   );
 });
 
+test("preserves alternatives embedded in a longer decision prompt", () => {
+  const input = "Should I build my portfolio app for Android or iOS first?";
+  const raw = buildLocalDemo("Which mobile platform should I explore?");
+  const result = normalizeAnalysis(input, raw);
+
+  assert.deepEqual(result.keywords, ["Android", "iOS"]);
+  assert.equal(result.graph.title, "Android or iOS?");
+  assert.deepEqual(
+    result.graph.nodes.filter((node) => node.id !== "root").map((node) => node.label),
+    ["Android", "iOS"],
+  );
+});
+
 test("never substitutes generic abstract keywords", () => {
   const input = "Should I move abroad or stay near family?";
   const result = buildLocalDemo(input);

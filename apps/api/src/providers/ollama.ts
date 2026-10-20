@@ -8,6 +8,81 @@ import {
 import { z } from "zod";
 
 type OllamaChatResponse = { message?: { content?: string } };
+type JsonObject = Record<string, unknown>;
+
+function isObject(value: unknown): value is JsonObject {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function boundedText(value: unknown, maxLength: number) {
+  if (typeof value !== "string") return value;
+  const normalized = value.replace(/\s+/g, " ").trim();
+  if (normalized.length <= maxLength) return normalized;
+  if (maxLength === 1) return normalized.slice(0, 1);
+  return `${normalized.slice(0, maxLength - 1).trimEnd()}…`;
+}
+
+/**
+ * Structured output keeps the response shape predictable, but small local models
+ * can still exceed string bounds. Clamp only bounded presentation fields here;
+ * Zod remains responsible for rejecting missing or structurally invalid data.
+ */
+function sanitizeDecisionPayload(value: unknown) {
+  if (!isObject(value)) return value;
+
+  const graph = isObject(value.graph) ? value.graph : undefined;
+  const nodes = Array.isArray(graph?.nodes)
+    ? graph.nodes.map((node) => isObject(node)
+      ? {
+          ...node,
+          label: boundedText(node.label, 48),
+          summary: boundedText(node.summary, 320),
+        }
+      : node)
+    : graph?.nodes;
+  const edges = Array.isArray(graph?.edges)
+    ? graph.edges.map((edge) => isObject(edge)
+      ? { ...edge, label: boundedText(edge.label, 80) }
+      : edge)
+    : graph?.edges;
+
+  return {
+    ...value,
+    keywords: Array.isArray(value.keywords)
+      ? value.keywords.map((keyword) => boundedText(keyword, 48))
+      : value.keywords,
+    framing: boundedText(value.framing, 220),
+    graph: graph
+      ? {
+          ...graph,
+          title: boundedText(graph.title, 120),
+          nodes,
+          edges,
+        }
+      : value.graph,
+  };
+}
+
+function sanitizeExpansionPayload(value: unknown) {
+  if (!isObject(value)) return value;
+  return {
+    ...value,
+    nodes: Array.isArray(value.nodes)
+      ? value.nodes.map((node) => isObject(node)
+        ? {
+            ...node,
+            label: boundedText(node.label, 48),
+            summary: boundedText(node.summary, 320),
+          }
+        : node)
+      : value.nodes,
+    edges: Array.isArray(value.edges)
+      ? value.edges.map((edge) => isObject(edge)
+        ? { ...edge, label: boundedText(edge.label, 80) }
+        : edge)
+      : value.edges,
+  };
+}
 
 export async function analyzeWithOllama(input: AnalyzeDecisionRequest) {
   const endpoint = process.env.OLLAMA_URL ?? "http://127.0.0.1:11434";
@@ -20,8 +95,10 @@ export async function analyzeWithOllama(input: AnalyzeDecisionRequest) {
     body: JSON.stringify({
       model,
       stream: false,
+      think: false,
+      keep_alive: "10m",
       format: schema,
-      options: { temperature: 0 },
+      options: { temperature: 0, num_predict: 1200 },
       messages: [
         {
           role: "system",
@@ -31,9 +108,10 @@ export async function analyzeWithOllama(input: AnalyzeDecisionRequest) {
             "Separate user facts, evidence, assumptions, and human unknowns.",
             "Create 2 to 6 materially different first branches.",
             "A human unknown must set needsHumanInput=true.",
+            "Every graph node label must be 1 to 3 words and at most 22 characters. Put explanations in summary, never in labels.",
             "Every keyword must be an exact contiguous phrase copied from the user's input; never replace their words with abstract themes.",
             "When the user gives explicit alternatives such as A or B, the root and first branches must preserve A and B.",
-            `Return JSON matching this schema: ${JSON.stringify(schema)}`,
+            "Return only the JSON object required by the supplied response schema.",
           ].join("\n"),
         },
         { role: "user", content: input.input },
@@ -47,7 +125,9 @@ export async function analyzeWithOllama(input: AnalyzeDecisionRequest) {
 
   const payload = (await response.json()) as OllamaChatResponse;
   if (!payload.message?.content) throw new Error("Ollama returned no content");
-  return AnalyzeDecisionResponseSchema.parse(JSON.parse(payload.message.content));
+  return AnalyzeDecisionResponseSchema.parse(
+    sanitizeDecisionPayload(JSON.parse(payload.message.content)),
+  );
 }
 
 export async function expandWithOllama(
@@ -66,8 +146,10 @@ export async function expandWithOllama(
     body: JSON.stringify({
       model,
       stream: false,
+      think: false,
+      keep_alive: "10m",
       format: schema,
-      options: { temperature: 0 },
+      options: { temperature: 0, num_predict: 900 },
       messages: [
         {
           role: "system",
@@ -79,7 +161,7 @@ export async function expandWithOllama(
             "Do not predict the future; mark assumptions and human unknowns honestly.",
             "parentNodeId must exactly equal the selected node id.",
             "Every edge must start at parentNodeId and point to one returned node.",
-            `Return JSON matching this schema: ${JSON.stringify(schema)}`,
+            "Return only the JSON object required by the supplied response schema.",
           ].join("\n"),
         },
         {
@@ -102,5 +184,7 @@ export async function expandWithOllama(
 
   const payload = (await response.json()) as OllamaChatResponse;
   if (!payload.message?.content) throw new Error("Ollama returned no expansion content");
-  return ExpandNodeResponseSchema.parse(JSON.parse(payload.message.content));
+  return ExpandNodeResponseSchema.parse(
+    sanitizeExpansionPayload(JSON.parse(payload.message.content)),
+  );
 }

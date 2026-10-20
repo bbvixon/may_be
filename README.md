@@ -14,7 +14,16 @@ npm run dev:web
 
 Open `http://127.0.0.1:4173`. The API listens on `http://127.0.0.1:8787`.
 
-The API defaults to a deterministic mock. For the recommended LM Studio + Gemma 4 E2B setup, start LM Studio's local server, load the model, then configure:
+The local API defaults to Ollama with `qwen3:4b-instruct`. Make sure Ollama is running and the model is installed:
+
+```powershell
+ollama pull qwen3:4b-instruct
+ollama ls
+```
+
+Then run `npm run dev:api` and `npm run dev:web` in separate terminals. The first decision can take longer while the model is loaded; later branch expansions reuse the warm model.
+
+To use LM Studio + Gemma 4 E2B instead, start LM Studio's local server, load the model, then configure:
 
 ```powershell
 $env:MAYBE_AI_PROVIDER="lmstudio"
@@ -23,7 +32,7 @@ $env:LMSTUDIO_MODEL="google/gemma-4-e2b"
 npm run dev:api
 ```
 
-Copy `.env.example` if you want to keep local settings. Ollama remains available as a second provider.
+The hosted Render service explicitly sets `MAYBE_AI_PROVIDER=mock`; these local Ollama settings are not exposed publicly.
 
 ## Voice input
 
