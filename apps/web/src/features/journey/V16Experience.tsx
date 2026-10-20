@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { createJourneyEngine, type JourneyEngine } from "./engine";
+import { journeySoundscape } from "./soundscape";
 import { useSpeechInput } from "./useSpeechInput";
 
 export function V16Experience() {
   const [input, setInput] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [soundEnabled, setSoundEnabled] = useState(journeySoundscape.enabled);
   const phoneRef = useRef<HTMLElement>(null);
   const meaningSpaceRef = useRef<HTMLDivElement>(null);
   const passageCopyRef = useRef<HTMLDivElement>(null);
@@ -40,6 +42,7 @@ export function V16Experience() {
         undo: undoRef.current,
       },
       onError: setError,
+      playSound: (sound) => journeySoundscape.play(sound),
     });
 
     return () => engineRef.current?.destroy();
@@ -48,12 +51,14 @@ export function V16Experience() {
   function begin() {
     const submittedInput = input.trim();
     if (!submittedInput) return;
+    journeySoundscape.play("tap");
     setInput("");
     void engineRef.current?.start(submittedInput);
   }
 
   function beginVoice() {
     setError(null);
+    journeySoundscape.play("tap");
     if (speech.isListening) {
       speech.stop();
       return;
@@ -62,14 +67,32 @@ export function V16Experience() {
   }
 
   return (
-    <main className="phone" ref={phoneRef} aria-live="polite">
+    <main
+      className="phone"
+      ref={phoneRef}
+      aria-live="polite"
+      onPointerDownCapture={() => { void journeySoundscape.start(); }}
+    >
       <header className="app-header">
-        <button className="brand-mini" onClick={() => engineRef.current?.reset()} aria-label="Start again">
+        <button className="brand-mini" onClick={() => { journeySoundscape.play("tap"); engineRef.current?.reset(); }} aria-label="Start again">
           may<span>.</span>be
         </button>
-        <button className="undo" ref={undoRef} onClick={() => engineRef.current?.undoChoice()} aria-label="Go back one decision">
-          ↶ <span>Undo</span>
-        </button>
+        <div className="header-actions">
+          <button
+            className={`sound-toggle${soundEnabled ? " enabled" : ""}`}
+            onClick={() => { void journeySoundscape.toggle().then(setSoundEnabled); }}
+            aria-label={soundEnabled ? "Mute sound" : "Turn on sound"}
+            aria-pressed={soundEnabled}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 9.2v5.6h3.4l4.4 3.6V5.6L7.4 9.2H4Z" />
+              {soundEnabled && <path className="sound-wave" d="M15 9.1c1.2 1.7 1.2 4.1 0 5.8M18 6.7c2.7 3.1 2.7 7.5 0 10.6" />}
+            </svg>
+          </button>
+          <button className="undo" ref={undoRef} onClick={() => engineRef.current?.undoChoice()} aria-label="Go back one decision">
+            ↶ <span>Undo</span>
+          </button>
+        </div>
       </header>
 
       <section className="scene active intro" data-scene="intro">

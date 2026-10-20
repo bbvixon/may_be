@@ -38,6 +38,10 @@ The hosted Render service explicitly sets `MAYBE_AI_PROVIDER=mock`; these local 
 
 The web client now uses the browser speech-recognition API and writes interim/final transcripts into the text field before analysis starts. Unsupported preview browsers show an explicit fallback instead of pretending to record. A later native mobile build should use the platform speech API or a dedicated local ASR service.
 
+## Soundscape
+
+The journey uses an original Web Audio soundscape: a quiet, evolving warm-pad progression with tonal cues for listening, keyword blooms, branch growth, selection, and undo. It starts only after user interaction, includes a persistent mute control, and uses no copyrighted or third-party audio assets.
+
 ## Workspace
 
 - `apps/web`: React mobile-first client and SVG branch renderer

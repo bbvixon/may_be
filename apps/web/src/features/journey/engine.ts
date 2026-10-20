@@ -1,5 +1,6 @@
 import type { AnalyzeDecisionResponse, DecisionNode } from "@maybe/contracts";
 import { analyzeDecision, expandNode } from "../../lib/api";
+import type { JourneySound } from "./soundscape";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -27,11 +28,12 @@ type Elements = {
 type Options = {
   elements: Elements;
   onError: (message: string | null) => void;
+  playSound?: (sound: JourneySound) => void;
 };
 
 export type JourneyEngine = ReturnType<typeof createJourneyEngine>;
 
-export function createJourneyEngine({ elements, onError }: Options) {
+export function createJourneyEngine({ elements, onError, playSound }: Options) {
   const scenes = new Map<string, HTMLElement>();
   elements.phone.querySelectorAll<HTMLElement>("[data-scene]").forEach((scene) => {
     scenes.set(scene.dataset.scene!, scene);
@@ -133,6 +135,7 @@ export function createJourneyEngine({ elements, onError }: Options) {
     clearTimers();
     const token = ++runToken;
     locked = true;
+    playSound?.("listen");
     onError(null);
     show("listening");
 
@@ -185,7 +188,10 @@ export function createJourneyEngine({ elements, onError }: Options) {
       bubble.style.left = `${positions[index][0]}%`;
       bubble.style.top = `${positions[index][1]}%`;
       elements.meaningSpace.appendChild(bubble);
-      later(() => bubble.classList.add("rise"), 160 + index * 430);
+      later(() => {
+        bubble.classList.add("rise");
+        playSound?.("bloom");
+      }, 160 + index * 430);
     });
     later(() => dissolveMeanings(token), 4450);
   }
@@ -286,6 +292,7 @@ export function createJourneyEngine({ elements, onError }: Options) {
   function addBranches(id: string, levelIndex: number, parentX: number) {
     const data = decisions[id];
     if (!data?.branches?.length) return;
+    playSound?.("branch");
     const parentY = 660 - levelIndex * 430;
     const childY = parentY - 430;
     const xs = branchXs(data.branches.length, parentX);
@@ -346,6 +353,7 @@ export function createJourneyEngine({ elements, onError }: Options) {
   function choose(node: SVGGElement) {
     if (locked) return;
     locked = true;
+    playSound?.("choose");
     const choice = node.dataset.choice!;
     const chosenX = Number(node.dataset.x);
     const currentLevel = level;
@@ -395,6 +403,7 @@ export function createJourneyEngine({ elements, onError }: Options) {
   function undoChoice() {
     if (locked || !history.length) return;
     locked = true;
+    playSound?.("undo");
     const state = history.pop()!;
     elements.hint.classList.remove("visible");
     const currentLevel = level;
