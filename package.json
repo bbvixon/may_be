@@ -13,6 +13,6 @@
     "typecheck": "npm run typecheck -w @maybe/contracts && npm run typecheck -w @maybe/api && npm run typecheck -w @maybe/web"
   },
   "engines": {
-    "node": ">=22"
+    "node": "22.x"
   }
 }

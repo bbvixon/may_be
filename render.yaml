@@ -4,12 +4,10 @@ services:
     runtime: node
     plan: free
     region: singapore
-    buildCommand: npm ci && npm run build
-    startCommand: npm run start -w @maybe/api
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: NODE_ENV=production npm run start -w @maybe/api
     healthCheckPath: /health
     autoDeployTrigger: commit
     envVars:
       - key: MAYBE_AI_PROVIDER
         value: mock
-      - key: NODE_ENV
-        value: production
