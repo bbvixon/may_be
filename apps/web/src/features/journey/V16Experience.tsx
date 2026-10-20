@@ -2,10 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { createJourneyEngine, type JourneyEngine } from "./engine";
 import { useSpeechInput } from "./useSpeechInput";
 
-const initialInput = "A better job in Bangalore means leaving my family. Should I go?";
-
 export function V16Experience() {
-  const [input, setInput] = useState(initialInput);
+  const [input, setInput] = useState("");
   const [error, setError] = useState<string | null>(null);
   const phoneRef = useRef<HTMLElement>(null);
   const meaningSpaceRef = useRef<HTMLDivElement>(null);
@@ -18,7 +16,10 @@ export function V16Experience() {
   const engineRef = useRef<JourneyEngine | null>(null);
   const speech = useSpeechInput({
     onTranscript: setInput,
-    onComplete: (transcript) => { void engineRef.current?.start(transcript); },
+    onComplete: (transcript) => {
+      setInput("");
+      void engineRef.current?.start(transcript);
+    },
     onError: setError,
   });
 
@@ -45,7 +46,10 @@ export function V16Experience() {
   }, []);
 
   function begin() {
-    void engineRef.current?.start(input);
+    const submittedInput = input.trim();
+    if (!submittedInput) return;
+    setInput("");
+    void engineRef.current?.start(submittedInput);
   }
 
   function beginVoice() {
@@ -81,7 +85,7 @@ export function V16Experience() {
             onChange={(event) => setInput(event.target.value)}
             onKeyDown={(event) => { if (event.key === "Enter") begin(); }}
           />
-          <button onClick={begin} aria-label="Send">↑</button>
+          <button onClick={begin} aria-label="Send" disabled={!input.trim()}>↑</button>
         </div>
         {error && <p className="journey-error" role="alert">{error}</p>}
       </section>
